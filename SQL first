@@ -1,0 +1,64 @@
+/*
+This project come from StraScratch ID 10069
+
+Data set is
+Tables: google_gmail_emails, google_fit_location
+*/
+
+
+
+
+
+
+
+
+
+WITH CTE AS(
+    SELECT
+        to_user,
+        day AS day_e,
+        COUNT(id) AS email_count
+    FROM google_gmail_emails
+    GROUP BY
+        to_user,
+        day
+),
+CTE2 AS(
+    SELECT
+        user_id,
+        day AS day_a,
+        COUNT(DISTINCT session_id)  AS activity_count
+    FROM google_fit_location
+    GROUP BY
+        user_id,
+        day
+),
+CTE3 AS(
+    SELECT
+        to_user,
+        COALESCE(day_e, 0) AS day_e,
+        COALESCE(email_count, 0) AS email_count,
+        user_id,
+        COALESCE(day_a, 0) AS day_a,
+        COALESCE(activity_count, 0) AS activity_count
+    FROM CTE
+    LEFT JOIN CTE2
+        ON CTE.to_user = CTE2.user_id
+        AND CTE.day_e = CTE2.day_a
+    UNION
+    SELECT
+        to_user,
+        COALESCE(day_e, 0) AS day_e,
+        COALESCE(email_count, 0) AS email_count,
+        user_id,
+        COALESCE(day_a, 0) AS day_a,
+        COALESCE(activity_count, 0) AS activity_count
+    FROM CTE
+    RIGHT JOIN CTE2
+        ON CTE.to_user = CTE2.user_id
+        AND CTE.day_e = CTE2.day_a
+)
+SELECT
+        (AVG(email_count * activity_count) - AVG(email_count) * AVG(activity_count)) /
+        (SQRT(AVG(email_count * email_count) - AVG(email_count) * AVG(email_count)) * SQRT(AVG(activity_count * activity_count) - AVG(activity_count) * AVG(activity_count))) AS result
+FROM CTE3
