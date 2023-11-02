@@ -1,0 +1,32 @@
+/* This question come from StrataScratch
+   ID = 10350
+And Table: fb_search_events
+*/
+
+
+
+
+
+
+
+with agg as (
+select 
+search_id, 
+case when clicked = 0 then 1 
+ when clicked = 1 and search_results_position > 3 then 2
+ when clicked = 1 and search_results_position <= 3 then 3 end rating
+from fb_search_events
+)
+
+, dat as (
+select 
+search_id, 
+rating, 
+row_number() over(partition by search_id order by rating desc) r
+from agg
+)
+
+select
+search_id, rating 
+from dat
+where r = 1
